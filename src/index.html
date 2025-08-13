@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<!-- script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script -- >
+<!--script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.12.4/xlsx.core.min.js"></script-->
+<!-- script src="xlsx.js"></script -- >
+<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/examples/js/controls/OrbitControls.min.js"></script -->
+<script src = "script.js"></script>
+<!--link rel="stylesheet" href="style.css"-->
+<meta charset="utf-8">
+</head>
+<body>
+<h1>Калькулятор громкоговорителей LPA</h1>
+</br>
+	<fieldset>
+	<legend>Громкоговоритель</legend>
+	<div id="exec_speker">
+		<p id = "p1">-</p>
+		<label for="exec">Исполнение:</label>
+		<select id='exec' style = "text-align: center;">
+			<option value = "exec0">Выбрать</option>
+			<option value = "exec1">Потолочный</option>
+			<option value = "exec2">Настенный</option>
+		</select>
+	</div>
+	<div id="model_speker">
+		<p id = "p1">-</p>
+		<label for="sel">Модель:</label>
+		<select id='sel' style = "text-align: center;"></select>
+	</div>
+	</fieldset>
+</br>
+	<fieldset>
+	<legend>Помещение</legend>
+	<div id="height">
+		<p>-</p>
+		<label for="inh">Высота, м:</label>
+		<input type="text" id="inh" value="6" size="1">
+	</div>
+	<div id="length_width">
+		<p><input type="radio" name ="pole" id = "var1"></p>
+		<label for="inlw">Длинна, м x Ширина, м:</label>
+		<input type="text" id="inlw" value="20" size="1" disabled = "disabled">
+		x
+		<input type="text" id="inw" value="10" size="1" disabled = "disabled">
+	</div>
+	<div id = "area">
+		<p><input type="radio" name ="pole" id = "var2" checked="checked"></p>
+		<label for="sq">Площадь, м2:</label>
+		<input type="text" value="200" id="sq" size ="1">
+	</div>
+	<div id="noise">
+		<p>-</p> 
+		<label for="noise_inp">Уровень шума, дБ:</label>
+		<input type="text" id="noise_inp" value="60" size="1">
+	</div>
+	<div id="uzd"> 
+		<p>-</p>
+		<label for="uzd_inp">УЗД, дБ:</label>
+		<input type="text" id="uzd_inp" value="75" size="1" disabled = "disabled">
+	</div>
+	<div id="fr"> 
+		<p>-</p>
+		<label for="fr_inp">Частота, кГц:</label>
+		<select id='fr_sel' style = "text-align: center; width: 100px; height: 20px;">
+			<option value = "1">1</option>
+			<option value = "4" selected="selected">4</option>
+			<option value = "8">8</option>
+		</select>
+	</div>
+	</fieldset>
+	</br>
+	<div>
+	<input id="btn" type= "button" value="подбор оборудования">
+	</div>
+	</br>
+	<div id="data">
+
+	<div id="head">
+		<div id="grid">
+			<div id = "row">Название</div>
+			<div id = "row">Значение</div>
+		</div>
+	</div>
+	
+	<div id="data_string">
+		<div id="grid">
+			<div id = "row">Громкоговоритель</div>
+			<div id = "row"><input type="text" id="row0" value="" size="5" disabled = "disabled"></div>
+		</div>
+	</div>
+
+	<div id="data_string">
+		<div id="grid">
+			<div id = "row">Мощность включения</div>
+			<div id = "row"><input type="text" id="row1" value="" size="5" disabled = "disabled"></div>
+		</div>
+	</div>
+
+	<div id="data_string">
+		<div id="grid">
+			<div id = "row">Площадь озвучивания одного громкоговорителя</div>
+			<div id = "row"><input type="text" id="row2" value="" size="5" disabled = "disabled"></div>
+		</div>
+	</div>
+
+	<div id="data_string">
+		<div id="grid">
+			<div id = "row">Количество</div>
+			<div id = "row"><input type="text" id="row3" value="" size="5" disabled = "disabled"></div>
+		</div>
+	</div>
+	</br>
+	</div>
+	<div id="three"></div>
+	</br>
+	<input id="btn2" type= "button" value="Печать в PDF">
+	</br>
+	<input id="btn3" type= "button" value="Структурная схема">
+</body>
+</html>
