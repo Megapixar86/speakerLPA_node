@@ -14,8 +14,8 @@ import './style.css';
 	const enm = (name)=> document.getElementsByName(name)[0]
 	//адрес спецификации
 	//var url = "https://cloud.luis.ru/index.php/s/6NSQGe3YpBKzwWP/download/LPA_Spec.xlsx"
-	//var url = "https://cloud.luis.ru/index.php/s/ygCyQyZAMRNcwEK/download/LPA_Spec2.xlsx"
-	var url = "http://127.0.0.1:8080/LPA_Spec.xlsx"
+	var url = "https://cloud.luis.ru/index.php/s/ygCyQyZAMRNcwEK/download/LPA_Spec2.xlsx"
+	//var url = "http://127.0.0.1:8080/LPA_Spec.xlsx"
 	//глобальные переменные
 	let objs_p
 	let objs_w
@@ -130,6 +130,68 @@ import './style.css';
 		}
 		el("noise_inp").value = LimNum(+el("noise_inp").value, 30, 99)
 		el("uzd_inp").value = +el("noise_inp").value + 15
+		
+		// Проверяем, что введено число для высоты установки
+		const heightValidation = validateInput(el("inh").value, {
+			type: 'number',
+			required: true,
+			min: 1.5,
+			max: 100
+		});
+		
+		if (heightValidation.isValid) {
+			el("inh").value = heightValidation.value;
+		} else {
+			// Если введено не число, показываем ошибку и устанавливаем значение по умолчанию
+			alert(`Ошибка в поле "Высота установки": ${heightValidation.message}`);
+			el("inh").value = 6; // значение по умолчанию
+		}
+		
+		// Проверяем, что введено число для длины помещения
+		const lengthValidation = validateInput(el("inlw").value, {
+			type: 'number',
+			required: true,
+			min: 2,
+			max: 1000
+		});
+		
+		if (lengthValidation.isValid) {
+			el("inlw").value = lengthValidation.value;
+		} else {
+			alert(`Ошибка в поле "Длина помещения": ${lengthValidation.message}`);
+			el("inlw").value = 20; // значение по умолчанию
+		}
+		
+		// Проверяем, что введено число для ширины помещения
+		const widthValidation = validateInput(el("inw").value, {
+			type: 'number',
+			required: true,
+			min: 2,
+			max: 1000
+		});
+		
+		if (widthValidation.isValid) {
+			el("inw").value = widthValidation.value;
+		} else {
+			alert(`Ошибка в поле "Ширина помещения": ${widthValidation.message}`);
+			el("inw").value = 10; // значение по умолчанию
+		}
+		
+		// Проверяем, что введено число для площади помещения
+		const areaValidation = validateInput(el("sq").value, {
+			type: 'number',
+			required: true,
+			min: 4,
+			max: 1000000
+		});
+		
+		if (areaValidation.isValid) {
+			el("sq").value = areaValidation.value;
+		} else {
+			alert(`Ошибка в поле "Площадь помещения": ${areaValidation.message}`);
+			el("sq").value = 200; // значение по умолчанию
+		}
+		
 	}
 
 	//ограничить значение
@@ -142,6 +204,145 @@ import './style.css';
 		}
 		return num
 	}
+
+	// Универсальная функция проверки введенных значений
+	function validateInput(value, options = {}) {
+		const {
+			type = 'number',           // тип данных: 'number', 'string', 'integer', 'float'
+			required = true,           // обязательное поле
+			min = null,                // минимальное значение
+			max = null,                // максимальное значение
+			minLength = null,          // минимальная длина (для строк)
+			maxLength = null,          // максимальная длина (для строк)
+			pattern = null,            // регулярное выражение для проверки
+			allowedValues = null,      // массив разрешенных значений
+			defaultValue = null,       // значение по умолчанию
+			trim = true               // обрезать пробелы для строк
+		} = options;
+
+		// Если значение пустое и не обязательное
+		if (!required && (value === '' || value === null || value === undefined)) {
+			return { isValid: true, value: defaultValue, message: '' };
+		}
+
+		// Если значение пустое и обязательное
+		if (required && (value === '' || value === null || value === undefined)) {
+			return { isValid: false, value: null, message: 'Поле обязательно для заполнения' };
+		}
+
+		let processedValue = value;
+
+		// Обработка строк
+		if (type === 'string') {
+			if (trim) {
+				processedValue = String(value).trim();
+			} else {
+				processedValue = String(value);
+			}
+
+			// Проверка длины строки
+			if (minLength !== null && processedValue.length < minLength) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: `Минимальная длина: ${minLength} символов` 
+				};
+			}
+
+			if (maxLength !== null && processedValue.length > maxLength) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: `Максимальная длина: ${maxLength} символов` 
+				};
+			}
+
+			// Проверка по регулярному выражению
+			if (pattern && !pattern.test(processedValue)) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: 'Значение не соответствует требуемому формату' 
+				};
+			}
+
+			return { isValid: true, value: processedValue, message: '' };
+		}
+
+		// Обработка чисел
+		if (type === 'number' || type === 'integer' || type === 'float') {
+			const numValue = parseFloat(value);
+			
+			// Проверка на NaN
+			if (isNaN(numValue)) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: 'Введите числовое значение' 
+				};
+			}
+
+			// Проверка на целое число
+			if (type === 'integer' && !Number.isInteger(numValue)) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: 'Введите целое число' 
+				};
+			}
+
+			// Проверка диапазона
+			if (min !== null && numValue < min) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: `Минимальное значение: ${min}` 
+				};
+			}
+
+			if (max !== null && numValue > max) {
+				return { 
+					isValid: false, 
+					value: null, 
+					message: `Максимальное значение: ${max}` 
+				};
+			}
+
+			return { isValid: true, value: numValue, message: '' };
+		}
+
+		// Проверка разрешенных значений
+		if (allowedValues && !allowedValues.includes(processedValue)) {
+			return { 
+				isValid: false, 
+				value: null, 
+				message: `Разрешенные значения: ${allowedValues.join(', ')}` 
+			};
+		}
+
+		return { isValid: true, value: processedValue, message: '' };
+	}
+
+	// Функция для проверки конкретных полей формы
+	function validateFormField(fieldId, options = {}) {
+		const field = el(fieldId);
+		if (!field) {
+			return { isValid: false, value: null, message: 'Поле не найдено' };
+		}
+
+		const result = validateInput(field.value, options);
+		
+		// Визуальная индикация ошибки
+		if (!result.isValid) {
+			field.style.borderColor = '#ff0000';
+			field.style.backgroundColor = '#fff0f0';
+		} else {
+			field.style.borderColor = '';
+			field.style.backgroundColor = '';
+		}
+
+		return result;
+	}
 	//функция расчета дальности
 	let dist = (spl, power, uzd) => 10**((spl+10*Math.log10(power)-uzd)/20)
 	//функция расчета звукового давления
@@ -152,28 +353,51 @@ import './style.css';
 		if(el('three').lastElementChild != null){el('three').removeChild(el('three').lastElementChild)}
 		arr_dist = []
 		arr_uzd = []
+		
+		// Проверяем все поля формы
+		const heightValidation = validateFormField("inh", { 
+			type: 'number', 
+			min: 1.5, 
+			max: 100, 
+			required: true 
+		});
+		
+		const areaValidation = validateFormField("sq", { 
+			type: 'number', 
+			min: 4, 
+			required: true 
+		});
+		
+		const noiseValidation = validateFormField("noise_inp", { 
+			type: 'number', 
+			min: 30, 
+			max: 99, 
+			required: true 
+		});
+		
+		// Проверяем, есть ли ошибки валидации
+		if (!heightValidation.isValid) {
+			alert(`Ошибка в поле "Высота установки": ${heightValidation.message}`);
+			return;
+		}
+		
+		if (!areaValidation.isValid) {
+			alert(`Ошибка в поле "Площадь помещения": ${areaValidation.message}`);
+			return;
+		}
+		
+		if (!noiseValidation.isValid) {
+			alert(`Ошибка в поле "Уровень шума": ${noiseValidation.message}`);
+			return;
+		}
+		
 		try {
 			//Высота установки
-			height = +el("inh").value
-			//console.log(height)
-			//console.log(height)
-			if(isNaN(height) || height === 0){
-				//height = 0;
-				//drawERROR("Введены не правильные данные!!! Введите числовое значение отличное от нуля и выберите модель")
-				throw new Error("Данные высоты не верны");
-			}
+			height = heightValidation.value
 			//Площадь помещения
-			let area = + el("sq").value
-			//console.log(area)
-			if(isNaN(area) || area === 0 ){
-				throw new Error("Данные площади не верны");
-			}
+			let area = areaValidation.value
 			//Уровень шума
-			let noise = +el("noise_inp").value
-			//console.log(noise)
-			if(isNaN(noise) || noise === 0 ){
-				throw new Error("Данные шума не верны");
-			}
+			let noise = noiseValidation.value
 			uzd = +el("uzd_inp").value
 			//console.log(uzd)
 			ob = el("sel").selectedIndex
@@ -195,12 +419,19 @@ import './style.css';
 						//elem
 					}
 				} else {
+					
 					let d = (height - 1.5)/ Math.cos(Math.PI * ang[el("fr_sel").selectedIndex]/360)
-					arr_dist.push(d)
+					//arr_dist.push(d)
 					for(let elem of power){
+						let d_max = dist(spl, elem, uzd)
 						let uzdL = UZDofdist(spl, elem, d)
 						let uzdMax = UZDofdist(spl, elem, height-1.5)
-						if(uzdMax<120 && uzdL > uzd){
+						if(uzdMax<120 && uzdL > uzd ){
+							if(d < d_max){
+								arr_dist.push(d)
+							}else{
+								arr_dist.push(d_max)
+							}
 							arr_uzd.push(uzdL)
 						}
 					}
@@ -544,11 +775,67 @@ import './style.css';
 		await new Promise((resolve, reject) => el("data").style.display = "none");
 	}*/
 	
+    // Функция для валидации в реальном времени
+	function setupRealTimeValidation() {
+		// Валидация высоты установки
+		el("inh").addEventListener("input", function() {
+			validateFormField("inh", { 
+				type: 'number', 
+				min: 1.5, 
+				max: 100, 
+				required: true 
+			});
+		});
+		
+		// Валидация длины помещения
+		el("inlw").addEventListener("input", function() {
+			validateFormField("inlw", { 
+				type: 'number', 
+				min: 0.1, 
+				max: 1000, 
+				required: true 
+			});
+		});
+		
+		// Валидация ширины помещения
+		el("inw").addEventListener("input", function() {
+			validateFormField("inw", { 
+				type: 'number', 
+				min: 0.1, 
+				max: 1000, 
+				required: true 
+			});
+		});
+		
+		// Валидация площади помещения
+		el("sq").addEventListener("input", function() {
+			validateFormField("sq", { 
+				type: 'number', 
+				min: 0.1, 
+				max: 1000000, 
+				required: true 
+			});
+		});
+		
+		// Валидация уровня шума
+		el("noise_inp").addEventListener("input", function() {
+			validateFormField("noise_inp", { 
+				type: 'number', 
+				min: 30, 
+				max: 99, 
+				required: true 
+			});
+		});
+	}
+
     // основная функция
 	function onLoadHandler() {
 		//-- подключаем обработчик щелчка
 		document.addEventListener("change", changeVal);
 		el("btn").addEventListener("click", calc);
+		
+		// Настраиваем валидацию в реальном времени
+		setupRealTimeValidation();
 		/*const animate = function () {
 			//controls.update()
 			requestAnimationFrame(animate);
