@@ -5,6 +5,7 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 import * as dat from 'lil-gui';
 import * as XLSX from 'xlsx';
 import './style.css';
+//import fileUrl from './static/LPA_Spec2.xlsx';
 
 // получить елемент по ID
 	const el = (id)=> document.getElementById(id)
@@ -16,6 +17,7 @@ import './style.css';
 	//var url = "https://cloud.luis.ru/index.php/s/6NSQGe3YpBKzwWP/download/LPA_Spec.xlsx"
 	var url = "https://cloud.luis.ru/index.php/s/ygCyQyZAMRNcwEK/download/LPA_Spec2.xlsx"
 	//var url = "http://127.0.0.1:8080/LPA_Spec.xlsx"
+	//const url = fileUrl;
 	//глобальные переменные
 	let objs_p
 	let objs_w
@@ -35,6 +37,8 @@ import './style.css';
 	let arr_uzd
 	let areaL
 	let model
+	let d
+	let it
 	//let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
 	const size = 500;
 	let camera = new THREE.PerspectiveCamera(45, 1, 0.1, 10000);
@@ -401,12 +405,14 @@ import './style.css';
 			uzd = +el("uzd_inp").value
 			//console.log(uzd)
 			ob = el("sel").selectedIndex
+			//получим данные из спецификации для выбранной модели
+			power = objs_p[ob]['Мощность, Вт'].split("/")
+			spl = +objs_p[ob]['SPL, дБ']
+			ang = objs_p[ob]['Угол направленности при 1/4/8 кГц'].split("/")
 			//расчет для Потолочников
-			if(el("exec").options[el("exec").selectedIndex].text === "Потолочный"){
-				//получим данные из спецификации для выбранной модели
-				power = objs_p[ob]['Мощность, Вт'].split("/")
-				spl = +objs_p[ob]['SPL, дБ']
-				ang = objs_p[ob]['Угол направленности при 1/4/8 кГц'].split("/")
+			//if(el("exec").options[el("exec").selectedIndex].text === "Потолочный"){
+			if(el("exec").selectedIndex == 1){
+				
 				//расчитываем дальность и УЗД в зависимости от выбранной частоты
 				if(el("fr_sel").selectedIndex == 0){
 					for(let elem of power){
@@ -418,34 +424,67 @@ import './style.css';
 						}
 						//elem
 					}
+					//let arr_dist = power.map(elem => {dist(spl, elem, uzd)}).filter(elem => UZDofdist(spl, elem, height-1.5)<120)
+					//let arr_uzd = power.map(elem => {UZDofdist(spl, elem, uzd)}).filter(uzdL => uzdL < 120)
+					//arr_dist = power.map((elem, item) => {({dist(spl, elem, uzd), item })})
+					/*arr_dist = power
+  						.map((p, item) => {
+    						const d = dist(spl, p, uzd);
+    						const uzdMax = UZDofdist(spl, p, height - 1.5);
+							//const item = item;
+    						return ({ d, uzdMax, item });
+  						})
+  					.filter(x => x.uzdMax < 120)
+  					.filter(x => x.d > (height - 1.5) / 0.7)
+  					.map((x, item)=> (x.d, x.item));*/
+
+						//.filter(elem => UZDofdist(spl, elem, height-1.5)<120)
+						//.filter(elem => {elem > (h-1.5)/0.7})
+					console.log(power)
+					console.log(arr_dist)
+					//console.log(arr_uzd)
+
 				} else {
 					
 					let d = (height - 1.5)/ Math.cos(Math.PI * ang[el("fr_sel").selectedIndex]/360)
 					//arr_dist.push(d)
 					for(let elem of power){
-						let d_max = dist(spl, elem, uzd)
+						//let d_max = dist(spl, elem, uzd)
 						let uzdL = UZDofdist(spl, elem, d)
 						let uzdMax = UZDofdist(spl, elem, height-1.5)
 						if(uzdMax<120 && uzdL > uzd ){
-							if(d < d_max){
-								arr_dist.push(d)
-							}else{
-								arr_dist.push(d_max)
-							}
+							//if(d < d_max){
+								//arr_dist.push(d)
+							//}else{
+								//arr_dist.push(d_max)
+							//}
+							//arr_uzd.push(uzdL)
+							arr_dist.push(d)
 							arr_uzd.push(uzdL)
 						}
 					}
+					console.log(power)
+					console.log(arr_dist)
+					console.log(arr_uzd)
 				}
-				L = Math.sqrt(arr_dist[arr_dist.length-1]**2 - (height - 1.5)**2)
+				//выбираем правильное значение дальности
+				for(let i = arr_dist.length - 1; i >= 0; i--){
+					const elem = arr_dist[i];
+					//console.log(height, elem)
+					if(height < elem + 1.5) {
+						d = elem;
+						it = i;
+						break;
+					}
+				}
+				L = Math.sqrt(d**2 - (height - 1.5)**2)
 				areaL = (L**2)*Math.PI
 				model = objs_p[ob]['Модель']
+				draw_p( height, d, L, areaL );
 			}
 			// расчет для настенных громкоговорителей
-			if(el("exec").options[el("exec").selectedIndex].text === "Настенный"){
-				//получим данные из спецификации для выбранной модели
-				power = objs_w[ob]['Мощность, Вт'].split("/")
-				spl = +objs_w[ob]['SPL, дБ']
-				ang = objs_w[ob]['Угол направленности при 1/4/8 кГц'].split("/")
+			//if(el("exec").options[el("exec").selectedIndex].text === "Настенный"){
+			if(el("exec").selectedIndex == 2){
 				//расчитываем дальность и УЗД
 				for(let elem of power){
 					let d = dist(spl, elem, uzd)
@@ -458,10 +497,20 @@ import './style.css';
 						arr_uzd.push(uzdL)
 					}
 				}
-				let R = arr_dist[arr_dist.length-1]
+				//выбираем правильное значение дальности
+				for(let i = arr_dist.length - 1; i >= 0; i--){
+					const elem = arr_dist[i];
+					if(height < 0.5*(elem*Math.sin(Math.PI * ang[el("fr_sel").selectedIndex]/360) + 1.5)) {
+						d = elem;
+						it = i;
+						break;
+					}
+				}
+				//let R = arr_dist[arr_dist.length-1]
+				let R = d;
 				// в зависимости от выбранной частоты считаем площадь
 				if(el("fr_sel").selectedIndex == 0){
-					L = Math.sqrt(arr_dist[arr_dist.length-1]**2 - (height - 1.5)**2)
+					L = Math.sqrt(R**2 - (height - 1.5)**2)
 					areaL = (Math.PI*R*R)/2 - R*R*Math.acos(1-(R-L)/R) + L*Math.sqrt(R*R - L*L)
 				} else {
 					L = Math.sqrt(R**2 - (height - 1.5)**2)
@@ -469,17 +518,27 @@ import './style.css';
 					areaL = Math.PI * (Ldiff**2)* ang[el("fr_sel").selectedIndex]/360
 				}
 				model = objs_w[ob]['Модель']
+				draw_w( height, R, Math.sqrt((R)**2 - ((R)*Math.cos(Math.PI * ang[el("fr_sel").selectedIndex]/360))**2), areaL )
 			}
 			
 			//el("data").style.display = "none"
 			el("row0").value = model
-			el("row1").value = power[power.length-1]
+			el("row1").value = power[it]
 			el("row2").value = Math.ceil(areaL, 0)
 			el("row3").value = Math.ceil(area/areaL, 0)
 			console.log(arr_dist)
 			console.log(arr_uzd)
-			if(el("exec").selectedIndex == 1) {draw_p( height, arr_dist[arr_dist.length-1], L, areaL )}
-			if(el("exec").selectedIndex == 2) {draw_w( height, arr_dist[arr_dist.length-1], Math.sqrt((arr_dist[arr_dist.length-1])**2 - ((arr_dist[arr_dist.length-1])*Math.cos(Math.PI * ang[el("fr_sel").selectedIndex]/360))**2), areaL )}
+			/*if(el("exec").selectedIndex == 1) {
+				for(let i = arr_dist.length - 1; i >= 0; i--){
+					const elem = arr_dist[i];
+					console.log(height, elem)
+					if(height < elem + 1.5) {
+						draw_p( height, elem, L, areaL );
+						break;
+					}
+				}
+			}*/
+			//if(el("exec").selectedIndex == 2) {draw_w( height, arr_dist[arr_dist.length-1], Math.sqrt((arr_dist[arr_dist.length-1])**2 - ((arr_dist[arr_dist.length-1])*Math.cos(Math.PI * ang[el("fr_sel").selectedIndex]/360))**2), areaL )}
 			
 		}catch (err) {
 			console.log(err)

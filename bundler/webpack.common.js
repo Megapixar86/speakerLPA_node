@@ -70,6 +70,14 @@ module.exports = {
                 {
                     filename: 'assets/fonts/[hash][ext]'
                 }
+            },
+            {
+                test: /\.xlsx$/,
+                type: 'asset/resource',
+                generator:
+                {
+                    filename: 'assets/data/[hash][ext]'
+                }
             }
         ]
     }
