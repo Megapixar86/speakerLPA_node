@@ -5,7 +5,7 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 import * as dat from 'lil-gui';
 import * as XLSX from 'xlsx';
 import './style.css';
-//import fileUrl from './static/LPA_Spec2.xlsx';
+import fileUrl from './static/LPA_Spec2.xlsx';
 
 // получить елемент по ID
 	const el = (id)=> document.getElementById(id)
@@ -15,9 +15,9 @@ import './style.css';
 	const enm = (name)=> document.getElementsByName(name)[0]
 	//адрес спецификации
 	//var url = "https://cloud.luis.ru/index.php/s/6NSQGe3YpBKzwWP/download/LPA_Spec.xlsx"
-	var url = "https://cloud.luis.ru/index.php/s/ygCyQyZAMRNcwEK/download/LPA_Spec2.xlsx"
+	//var url = "https://cloud.luis.ru/index.php/s/ygCyQyZAMRNcwEK/download/LPA_Spec2.xlsx"
 	//var url = "http://127.0.0.1:8080/LPA_Spec.xlsx"
-	//const url = fileUrl;
+	const url = fileUrl;
 	//глобальные переменные
 	let objs_p
 	let objs_w
@@ -546,7 +546,7 @@ import './style.css';
 		}
 	}
 	// нарисовать пересечение
-	function getIntersec(obj, scene){
+	function getIntersec(obj, scene, fillColor = 0xff00ff){
 		//animate()
 		const planoref = new THREE.Plane( new THREE.Vector3(0, 1, 0), -1.495)
 		let pointsOfIntersection = new THREE.Geometry();
@@ -568,6 +568,117 @@ import './style.css';
 		let pointsSec = new THREE.Points(pointsOfIntersection, pointMat)
 		let linesMat = new THREE.LineBasicMaterial({color: 0xffffff})
 		let lines = new THREE.LineSegments(pointsOfIntersection, linesMat)
+
+		// Создаем закрашенную область пересечения
+		if(pointsOfIntersection.vertices.length > 0){
+			//const planeY = 1.495; // y координата плоскости пересечения
+			const planeY = 0;
+			
+			// Упорядочиваем точки по углу вокруг центра для создания замкнутой фигуры
+			const sortedPoints = pointsOfIntersection.vertices.slice().sort(function(a, b){
+				const angleA = Math.atan2(a.z, a.x);
+				const angleB = Math.atan2(b.z, b.x);
+				return angleA - angleB;
+			});
+			
+			// Находим максимальный радиус от центра плоскости для отображения
+			let maxRadius = 0;
+			sortedPoints.forEach(function(vertex){
+				const distance = Math.sqrt(vertex.x**2 + vertex.z**2);
+				if(distance > maxRadius){
+					maxRadius = distance;
+				}
+			});
+			
+			// Создаем зеркальное отображение фигуры относительно плоскости XY (отражение по оси Z)
+			const mirroredShape = new THREE.Shape();
+			if(sortedPoints.length > 0){
+				// Начинаем с первой точки с отраженной координатой z
+				mirroredShape.moveTo(sortedPoints[0].x, -sortedPoints[0].z);
+				// Соединяем все точки линиями с отраженными координатами z
+				for(let i = 1; i < sortedPoints.length; i++){
+					mirroredShape.lineTo(sortedPoints[i].x, -sortedPoints[i].z);
+				}
+				// Замыкаем фигуру
+				mirroredShape.lineTo(sortedPoints[0].x, -sortedPoints[0].z);
+			}
+			
+			const shapeMaterial = new THREE.MeshBasicMaterial({ 
+				color: fillColor, 
+				side: THREE.DoubleSide,
+				transparent: true,
+				opacity: 0.5
+			});
+			const mirroredShapeGeometry = new THREE.ShapeGeometry(mirroredShape);
+			const mirroredShapeMesh = new THREE.Mesh(mirroredShapeGeometry, shapeMaterial);
+			mirroredShapeMesh.rotation.x = -0.5 * Math.PI; // Поворачиваем фигуру горизонтально
+			mirroredShapeMesh.position.y = planeY;
+			scene.add(mirroredShapeMesh);
+			
+			// Создаем линию радиуса от центра до самой дальней точки зеркальной фигуры
+			// Находим самую дальнюю точку из исходных точек
+			let farthestPoint = sortedPoints[0];
+			let farthestDistance = Math.sqrt(sortedPoints[0].x**2 + sortedPoints[0].z**2);
+			let farthestIndex = 0;
+			sortedPoints.forEach(function(point, index){
+				const distance = Math.sqrt(point.x**2 + point.z**2);
+				if(distance > farthestDistance){
+					farthestDistance = distance;
+					farthestPoint = point;
+					farthestIndex = index;
+				}
+			});
+			
+			// Создаем зеркальную точку для радиуса
+			// В Shape используется (x, -z), что после поворота на -90° по X становится (x, 0, -z) в 3D
+			// Зеркальная фигура отражена по оси Z, поэтому используем -z для координаты z
+			// Используем те же координаты, что и в зеркальной фигуре: (x, -z)
+			// Но для правильного направления используем угол из зеркальных координат
+			const mirroredAngle = Math.atan2(farthestPoint.z, -farthestPoint.x);
+			const mirroredRadiusPoint = new THREE.Vector3(
+				Math.cos(mirroredAngle) * farthestDistance,
+				planeY + 0.01,
+				Math.sin(mirroredAngle) * farthestDistance
+			);
+			
+			const radiusLineGeometry = new THREE.BufferGeometry();
+			const radiusLinePoints = [
+				new THREE.Vector3(0, planeY + 0.01, 0), // Центр
+				mirroredRadiusPoint // Зеркальная точка с отраженной координатой z
+			];
+			radiusLineGeometry.setFromPoints(radiusLinePoints);
+			const radiusLineMaterial = new THREE.LineBasicMaterial({ 
+				color: 0xffff00, 
+				linewidth: 2 
+			});
+			const radiusLine = new THREE.Line(radiusLineGeometry, radiusLineMaterial);
+			scene.add(radiusLine);
+			
+			// Создаем текстовую метку с максимальным радиусом на зеркальной позиции
+			const canvas = document.createElement('canvas');
+			const context = canvas.getContext('2d');
+			canvas.width = 256;
+			canvas.height = 64;
+			context.fillStyle = 'rgba(255, 255, 0, 0.8)';
+			context.fillRect(0, 0, canvas.width, canvas.height);
+			context.fillStyle = 'black';
+			context.font = 'Bold 32px Arial';
+			context.textAlign = 'center';
+			context.textBaseline = 'middle';
+			const radiusText = `R max = ${maxRadius.toFixed(2)} м`;
+			context.fillText(radiusText, canvas.width / 2, canvas.height / 2);
+			
+			const texture = new THREE.CanvasTexture(canvas);
+			const spriteMaterial = new THREE.SpriteMaterial({ 
+				map: texture,
+				transparent: true
+			});
+			const sprite = new THREE.Sprite(spriteMaterial);
+			// Позиция метки на середине зеркального радиуса
+			sprite.position.set(mirroredRadiusPoint.x / 2, planeY + 0.5, mirroredRadiusPoint.z / 2);
+			sprite.scale.set(2, 0.5, 1); // Масштабируем спрайт
+			scene.add(sprite);
+		}
 
 		//return pointsSec
 		scene.add(pointsSec)
